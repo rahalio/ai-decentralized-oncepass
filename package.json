@@ -1,0 +1,31 @@
+{
+  "name": "oncepass",
+  "version": "0.1.0",
+  "description": "Oncepass consent-gated KYC evidence reuse (OpenAPI-first DDD)",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:openapi": "pnpm --filter @oncepass/openapi-core lint:domains",
+    "bundle:openapi": "pnpm --filter @oncepass/openapi-core bundle:domains",
+    "build": "pnpm --filter @oncepass/core build && pnpm --filter @oncepass/services build && pnpm --filter @oncepass/adapters build && pnpm --filter @oncepass/api-server build",
+    "dev:api": "pnpm --filter @oncepass/api-server dev",
+    "codegen:core": "node scripts/sync-codegen-paths.mjs && PYTHONPATH=.codegen/codegen/src python3 -m zero_codegen.cli.main generate --all --layers core --config .codegen/.zero-codegen-merged.json --skip-build",
+    "codegen:identity": "node scripts/sync-codegen-paths.mjs && PYTHONPATH=.codegen/codegen/src python3 -m zero_codegen.cli.main generate --domain identity --config .codegen/.zero-codegen-merged.json --skip-build",
+    "codegen:all": "node scripts/sync-codegen-paths.mjs && PYTHONPATH=.codegen/codegen/src python3 -m zero_codegen.cli.main generate --all --config .codegen/.zero-codegen-merged.json --skip-build --no-fail-fast",
+    "dev:web": "pnpm --filter @oncepass/webapp dev",
+    "codegen:paths": "node scripts/sync-codegen-paths.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^20.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.55.0"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9.0.0"
+  }
+}

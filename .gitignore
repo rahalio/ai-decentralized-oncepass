@@ -1,12 +1,12 @@
 node_modules/
-.next/
 dist/
 build/
 out/
+.next/
 coverage/
 .turbo/
 .cache/
-*.log
+*.tsbuildinfo
 .DS_Store
 .env
 .env.*
@@ -14,8 +14,16 @@ coverage/
 *.pem
 .venv/
 __pycache__/
+**/node_modules/
+**/__pycache__/
+*.pyc
+test-results/
+playwright-report/
+*.log
 
-# Codegen — do not push
+packages/openapi-core/src/.bundled/
+
+# Codegen — do not commit or push (copy from zero-apps-codegen-scaffold when missing)
 .codegen/
 codegen/
 **/zero_codegen/

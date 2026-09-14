@@ -1,0 +1,70 @@
+openapi: 3.1.0
+info:
+  title: Access schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    AccessId:
+      type: string
+      pattern: '^acc_[0-9A-HJKMNP-TV-Z]{26}$'
+    GrantId:
+      type: string
+      pattern: '^cns_[0-9A-HJKMNP-TV-Z]{26}$'
+    AccessStatus:
+      type: string
+      enum: [pending, allowed, denied]
+    DenyReason:
+      type: string
+      enum: [expired, withdrawn, purpose_mismatch, suspended, none]
+    AmlOutcome:
+      type: string
+      enum: [approve, refer, reject]
+    AccessRequest:
+      type: object
+      required: [id, grantId, status, createdAt, updatedAt]
+      properties:
+        id: { $ref: '#/components/schemas/AccessId' }
+        grantId: { $ref: '#/components/schemas/GrantId' }
+        relyingPartyId: { type: string }
+        status: { $ref: '#/components/schemas/AccessStatus' }
+        denyReason: { $ref: '#/components/schemas/DenyReason' }
+        payloadRef: { type: string, description: Short-lived verification payload reference (no images). }
+        payloadExpiresAt: { type: string, format: date-time }
+        amlOutcome: { $ref: '#/components/schemas/AmlOutcome' }
+        amlDecidedAt: { type: string, format: date-time }
+        amlNotes: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AccessRequestCreate:
+      type: object
+      required: [grantId]
+      properties:
+        grantId: { $ref: '#/components/schemas/GrantId' }
+        purpose: { type: string }
+    AmlDecisionCreate:
+      type: object
+      required: [outcome]
+      properties:
+        outcome: { $ref: '#/components/schemas/AmlOutcome' }
+        notes: { type: string }
+    AccessListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AccessRequest' }
+        nextCursor: { type: string }
+    AccessRequestResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/AccessRequest' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
+    AccessListResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/AccessListData' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }

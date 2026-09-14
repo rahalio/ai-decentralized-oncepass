@@ -1,0 +1,166 @@
+openapi: 3.1.0
+info:
+  title: Vaults API
+  version: 0.1.0
+  description: |
+    Home identity vaults — institution-held attributes off-chain (BR-1).
+  license:
+    name: Proprietary
+    url: https://oncepass.local/license
+  x-domain: vlt
+  x-domain-prefix: VL
+  x-product-slug: oncepass
+servers:
+  - url: https://api.oncepass.local
+    description: Local API
+security:
+  - apiKey: []
+tags:
+  - name: Vaults
+    description: Home identity vaults
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+
+paths:
+  /v1/vaults:
+    get:
+      operationId: listHomeVaults
+      tags: [Vaults]
+      summary: List home vaults (no PD)
+      x-repository: HomeVault
+      x-dynamodb:
+        entityType: "VAULT"
+        pkPatternTemplate: "VAULT#${vaultId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: institutionId
+          in: query
+          schema: { type: string }
+        - name: subjectRef
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Vault list
+          content:
+            application/json:
+              schema:
+                $ref: ./vaults.schemas.yaml#/components/schemas/HomeVaultListResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+    post:
+      operationId: registerHomeVault
+      tags: [Vaults]
+      summary: Register a home vault (off-chain PD source of truth)
+      x-repository: HomeVault
+      x-dynamodb:
+        entityType: "VAULT"
+        pkPatternTemplate: "VAULT#${vaultId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./vaults.schemas.yaml#/components/schemas/HomeVaultCreate
+      responses:
+        "201":
+          description: Vault registered
+          content:
+            application/json:
+              schema:
+                $ref: ./vaults.schemas.yaml#/components/schemas/HomeVaultResponse
+        "400":
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "409":
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/vaults/{vaultId}:
+    get:
+      operationId: getHomeVault
+      tags: [Vaults]
+      summary: Get home vault by id
+      x-repository: HomeVault
+      x-dynamodb:
+        entityType: "VAULT"
+        pkPatternTemplate: "VAULT#${vaultId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - name: vaultId
+          in: path
+          required: true
+          schema:
+            $ref: ./vaults.schemas.yaml#/components/schemas/VaultId
+      responses:
+        "200":
+          description: Vault
+          content:
+            application/json:
+              schema:
+                $ref: ./vaults.schemas.yaml#/components/schemas/HomeVaultResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "404":
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+    patch:
+      operationId: refreshHomeVaultCompleteness
+      tags: [Vaults]
+      summary: Refresh vault attribute completeness (no PD returned)
+      x-repository: HomeVault
+      x-dynamodb:
+        entityType: "VAULT"
+        pkPatternTemplate: "VAULT#${vaultId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - name: vaultId
+          in: path
+          required: true
+          schema:
+            $ref: ./vaults.schemas.yaml#/components/schemas/VaultId
+      responses:
+        "200":
+          description: Completeness refreshed
+          content:
+            application/json:
+              schema:
+                $ref: ./vaults.schemas.yaml#/components/schemas/HomeVaultResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "404":
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem

@@ -1,0 +1,551 @@
+import { makeApi, Zodios, type ZodiosOptions } from '@zodios/core';
+import { z } from 'zod';
+
+const notariseEvidence_Body = z
+  .object({
+    vaultId: z.string().regex(/^vlt_[0-9A-HJKMNP-TV-Z]{26}$/),
+    evidenceHash: z.string(),
+    pdBanPassed: z.boolean(),
+    auditNote: z.string().optional(),
+    ssiMode: z.boolean().optional().default(false),
+  })
+  .passthrough();
+const updateSsiTemplate_Body = z
+  .object({ enabled: z.boolean(), credentialTemplate: z.string().optional() })
+  .passthrough();
+const VaultId = z.string();
+const Problem = z
+  .object({
+    type: z.string().url(),
+    title: z.string(),
+    status: z.number().int(),
+    detail: z.string(),
+    instance: z.string().url(),
+    code: z.string(),
+  })
+  .partial()
+  .passthrough();
+const EvidenceId = z.string();
+const EvidenceRecord = z
+  .object({
+    id: z.string().regex(/^evd_[0-9A-HJKMNP-TV-Z]{26}$/),
+    vaultId: z.string().regex(/^vlt_[0-9A-HJKMNP-TV-Z]{26}$/),
+    evidenceHash: z.string(),
+    pdBanPassed: z.boolean(),
+    auditNote: z.string().optional(),
+    orphaned: z.boolean(),
+    ssiMode: z.boolean().optional().default(false),
+    createdAt: z.string().datetime({ offset: true }),
+    updatedAt: z.string().datetime({ offset: true }),
+  })
+  .passthrough();
+const EvidenceListData = z
+  .object({
+    items: z.array(
+      z
+        .object({
+          id: z.string().regex(/^evd_[0-9A-HJKMNP-TV-Z]{26}$/),
+          vaultId: z.string().regex(/^vlt_[0-9A-HJKMNP-TV-Z]{26}$/),
+          evidenceHash: z.string(),
+          pdBanPassed: z.boolean(),
+          auditNote: z.string().optional(),
+          orphaned: z.boolean(),
+          ssiMode: z.boolean().optional().default(false),
+          createdAt: z.string().datetime({ offset: true }),
+          updatedAt: z.string().datetime({ offset: true }),
+        })
+        .passthrough()
+    ),
+    nextCursor: z.string().optional(),
+  })
+  .passthrough();
+const ResponseMeta = z
+  .object({
+    requestId: z.string().uuid(),
+    correlationId: z.string(),
+    generatedAt: z.string().datetime({ offset: true }),
+  })
+  .partial()
+  .passthrough();
+const EvidenceListResponse = z
+  .object({
+    data: z
+      .object({
+        items: z.array(
+          z
+            .object({
+              id: z.string().regex(/^evd_[0-9A-HJKMNP-TV-Z]{26}$/),
+              vaultId: z.string().regex(/^vlt_[0-9A-HJKMNP-TV-Z]{26}$/),
+              evidenceHash: z.string(),
+              pdBanPassed: z.boolean(),
+              auditNote: z.string().optional(),
+              orphaned: z.boolean(),
+              ssiMode: z.boolean().optional().default(false),
+              createdAt: z.string().datetime({ offset: true }),
+              updatedAt: z.string().datetime({ offset: true }),
+            })
+            .passthrough()
+        ),
+        nextCursor: z.string().optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough()
+      .optional(),
+  })
+  .passthrough();
+const EvidenceRecordCreate = z
+  .object({
+    vaultId: z.string().regex(/^vlt_[0-9A-HJKMNP-TV-Z]{26}$/),
+    evidenceHash: z.string(),
+    pdBanPassed: z.boolean(),
+    auditNote: z.string().optional(),
+    ssiMode: z.boolean().optional().default(false),
+  })
+  .passthrough();
+const EvidenceRecordResponse = z
+  .object({
+    data: z
+      .object({
+        id: z.string().regex(/^evd_[0-9A-HJKMNP-TV-Z]{26}$/),
+        vaultId: z.string().regex(/^vlt_[0-9A-HJKMNP-TV-Z]{26}$/),
+        evidenceHash: z.string(),
+        pdBanPassed: z.boolean(),
+        auditNote: z.string().optional(),
+        orphaned: z.boolean(),
+        ssiMode: z.boolean().optional().default(false),
+        createdAt: z.string().datetime({ offset: true }),
+        updatedAt: z.string().datetime({ offset: true }),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough()
+      .optional(),
+  })
+  .passthrough();
+const SsiTemplate = z
+  .object({
+    enabled: z.boolean(),
+    credentialTemplate: z.string().optional(),
+    pdBanEnforced: z.boolean(),
+    updatedAt: z.string().datetime({ offset: true }),
+  })
+  .passthrough();
+const SsiTemplateResponse = z
+  .object({
+    data: z
+      .object({
+        enabled: z.boolean(),
+        credentialTemplate: z.string().optional(),
+        pdBanEnforced: z.boolean(),
+        updatedAt: z.string().datetime({ offset: true }),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough()
+      .optional(),
+  })
+  .passthrough();
+const SsiTemplateUpdate = z
+  .object({ enabled: z.boolean(), credentialTemplate: z.string().optional() })
+  .passthrough();
+
+export const schemas: any = {
+  notariseEvidence_Body,
+  updateSsiTemplate_Body,
+  VaultId,
+  Problem,
+  EvidenceId,
+  EvidenceRecord,
+  EvidenceListData,
+  ResponseMeta,
+  EvidenceListResponse,
+  EvidenceRecordCreate,
+  EvidenceRecordResponse,
+  SsiTemplate,
+  SsiTemplateResponse,
+  SsiTemplateUpdate,
+};
+
+const endpoints = makeApi([
+  {
+    method: 'get',
+    path: '/v1/evidence',
+    alias: 'listEvidence',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'cursor',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+      {
+        name: 'limit',
+        type: 'Query',
+        schema: z.number().int().gte(1).lte(100).optional().default(25),
+      },
+      {
+        name: 'vaultId',
+        type: 'Query',
+        schema: z
+          .string()
+          .regex(/^vlt_[0-9A-HJKMNP-TV-Z]{26}$/)
+          .optional(),
+      },
+      {
+        name: 'subjectRef',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            items: z.array(
+              z
+                .object({
+                  id: z.string().regex(/^evd_[0-9A-HJKMNP-TV-Z]{26}$/),
+                  vaultId: z.string().regex(/^vlt_[0-9A-HJKMNP-TV-Z]{26}$/),
+                  evidenceHash: z.string(),
+                  pdBanPassed: z.boolean(),
+                  auditNote: z.string().optional(),
+                  orphaned: z.boolean(),
+                  ssiMode: z.boolean().optional().default(false),
+                  createdAt: z.string().datetime({ offset: true }),
+                  updatedAt: z.string().datetime({ offset: true }),
+                })
+                .passthrough()
+            ),
+            nextCursor: z.string().optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough()
+          .optional(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/evidence',
+    alias: 'notariseEvidence',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: notariseEvidence_Body,
+      },
+      {
+        name: 'Idempotency-Key',
+        type: 'Header',
+        schema: z.string().min(1).max(128),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            id: z.string().regex(/^evd_[0-9A-HJKMNP-TV-Z]{26}$/),
+            vaultId: z.string().regex(/^vlt_[0-9A-HJKMNP-TV-Z]{26}$/),
+            evidenceHash: z.string(),
+            pdBanPassed: z.boolean(),
+            auditNote: z.string().optional(),
+            orphaned: z.boolean(),
+            ssiMode: z.boolean().optional().default(false),
+            createdAt: z.string().datetime({ offset: true }),
+            updatedAt: z.string().datetime({ offset: true }),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough()
+          .optional(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 400,
+        description: `Malformed request`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+      {
+        status: 422,
+        description: `Semantically invalid request (e.g. PACK_EMPTY)`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/evidence/:evidenceId',
+    alias: 'getEvidence',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'evidenceId',
+        type: 'Path',
+        schema: z.string().regex(/^evd_[0-9A-HJKMNP-TV-Z]{26}$/),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            id: z.string().regex(/^evd_[0-9A-HJKMNP-TV-Z]{26}$/),
+            vaultId: z.string().regex(/^vlt_[0-9A-HJKMNP-TV-Z]{26}$/),
+            evidenceHash: z.string(),
+            pdBanPassed: z.boolean(),
+            auditNote: z.string().optional(),
+            orphaned: z.boolean(),
+            ssiMode: z.boolean().optional().default(false),
+            createdAt: z.string().datetime({ offset: true }),
+            updatedAt: z.string().datetime({ offset: true }),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough()
+          .optional(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+      {
+        status: 404,
+        description: `Resource not found`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/ssi-template',
+    alias: 'getSsiTemplate',
+    requestFormat: 'json',
+    response: z
+      .object({
+        data: z
+          .object({
+            enabled: z.boolean(),
+            credentialTemplate: z.string().optional(),
+            pdBanEnforced: z.boolean(),
+            updatedAt: z.string().datetime({ offset: true }),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough()
+          .optional(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'put',
+    path: '/v1/ssi-template',
+    alias: 'updateSsiTemplate',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: updateSsiTemplate_Body,
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            enabled: z.boolean(),
+            credentialTemplate: z.string().optional(),
+            pdBanEnforced: z.boolean(),
+            updatedAt: z.string().datetime({ offset: true }),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough()
+          .optional(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+      {
+        status: 422,
+        description: `Semantically invalid request (e.g. PACK_EMPTY)`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+]);
+
+export const api: any = new Zodios(
+  'https://api.ddd-codegen-starter.local/v1',
+  endpoints
+);
+
+export function createApiClient(baseUrl: string, options?: ZodiosOptions): any {
+  return new Zodios(baseUrl, endpoints, options);
+}

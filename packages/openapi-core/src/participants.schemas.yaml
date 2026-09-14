@@ -1,0 +1,174 @@
+openapi: 3.1.0
+info:
+  title: Participants schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    ParticipantId:
+      type: string
+      pattern: '^prt_[0-9A-HJKMNP-TV-Z]{26}$'
+    AnomalyId:
+      type: string
+      pattern: '^anm_[0-9A-HJKMNP-TV-Z]{26}$'
+    AuditExportId:
+      type: string
+      pattern: '^aud_[0-9A-HJKMNP-TV-Z]{26}$'
+    ParticipantRole:
+      type: string
+      enum: [home, relying, operator]
+    Controllership:
+      type: string
+      enum: [controller, processor, joint_controller]
+    ParticipantStatus:
+      type: string
+      enum: [active, suspended, pending]
+    AnomalySeverity:
+      type: string
+      enum: [low, medium, high, critical]
+    AnomalyStatus:
+      type: string
+      enum: [open, investigating, cleared, suspended]
+    ExportStatus:
+      type: string
+      enum: [queued, ready, failed]
+    ParticipantOrg:
+      type: object
+      required: [id, name, role, controllership, status, createdAt, updatedAt]
+      properties:
+        id: { $ref: '#/components/schemas/ParticipantId' }
+        name: { type: string }
+        role: { $ref: '#/components/schemas/ParticipantRole' }
+        controllership: { $ref: '#/components/schemas/Controllership' }
+        dpoContact: { type: string }
+        status: { $ref: '#/components/schemas/ParticipantStatus' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ParticipantOrgCreate:
+      type: object
+      required: [name, role, controllership]
+      properties:
+        name: { type: string }
+        role: { $ref: '#/components/schemas/ParticipantRole' }
+        controllership: { $ref: '#/components/schemas/Controllership' }
+        dpoContact: { type: string }
+    ParticipantSuspend:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string }
+        notifyDpo: { type: boolean, default: true }
+    AnomalyAlert:
+      type: object
+      required: [id, participantId, severity, status, summary, createdAt, updatedAt]
+      properties:
+        id: { $ref: '#/components/schemas/AnomalyId' }
+        participantId: { $ref: '#/components/schemas/ParticipantId' }
+        severity: { $ref: '#/components/schemas/AnomalySeverity' }
+        status: { $ref: '#/components/schemas/AnomalyStatus' }
+        summary: { type: string }
+        accessVolume: { type: integer }
+        breachHookStatus: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AnomalyClear:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string }
+    AuditExportJob:
+      type: object
+      required: [id, status, pdNeverOnLedgerAttestation, createdAt, updatedAt]
+      properties:
+        id: { $ref: '#/components/schemas/AuditExportId' }
+        orgId: { $ref: '#/components/schemas/ParticipantId' }
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+        status: { $ref: '#/components/schemas/ExportStatus' }
+        downloadUrl: { type: string }
+        pdNeverOnLedgerAttestation: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AuditExportCreate:
+      type: object
+      properties:
+        orgId: { $ref: '#/components/schemas/ParticipantId' }
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+    ReuseMetrics:
+      type: object
+      required: [grants, accessCompleted, amlDecided, onboarded, abandonCount, updatedAt]
+      properties:
+        grants: { type: integer }
+        accessCompleted: { type: integer }
+        amlDecided: { type: integer }
+        onboarded: { type: integer }
+        abandonCount: { type: integer }
+        costPerReuseEstimate: { type: number }
+        updatedAt: { type: string, format: date-time }
+    ParticipantListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ParticipantOrg' }
+        nextCursor: { type: string }
+    AnomalyListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AnomalyAlert' }
+        nextCursor: { type: string }
+    AuditExportListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AuditExportJob' }
+        nextCursor: { type: string }
+    ParticipantOrgResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/ParticipantOrg' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
+    ParticipantListResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/ParticipantListData' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
+    AnomalyAlertResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/AnomalyAlert' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
+    AnomalyListResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/AnomalyListData' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
+    AuditExportJobResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/AuditExportJob' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
+    AuditExportListResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/AuditExportListData' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
+    ReuseMetricsResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/ReuseMetrics' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }

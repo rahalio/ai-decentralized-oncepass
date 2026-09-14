@@ -1,0 +1,215 @@
+openapi: 3.1.0
+info:
+  title: Consents API
+  version: 0.1.0
+  description: |
+    Time-boxed, purpose-bound, withdrawable consent grants (BR-3, BR-7, BR-9).
+  license:
+    name: Proprietary
+    url: https://oncepass.local/license
+  x-domain: cns
+  x-domain-prefix: CN
+  x-product-slug: oncepass
+servers:
+  - url: https://api.oncepass.local
+    description: Local API
+security:
+  - apiKey: []
+tags:
+  - name: Consents
+    description: Consent grants
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+
+paths:
+  /v1/consents:
+    get:
+      operationId: listConsentGrants
+      tags: [Consents]
+      summary: List consent grants for customer or institution
+      x-repository: ConsentGrant
+      x-dynamodb:
+        entityType: "CONSENT"
+        pkPatternTemplate: "CONSENT#${grantId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: status
+          in: query
+          schema:
+            $ref: ./consents.schemas.yaml#/components/schemas/ConsentStatus
+        - name: subjectRef
+          in: query
+          schema: { type: string }
+        - name: relyingPartyId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Grant list
+          content:
+            application/json:
+              schema:
+                $ref: ./consents.schemas.yaml#/components/schemas/ConsentGrantListResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+    post:
+      operationId: createConsentGrant
+      tags: [Consents]
+      summary: Create a pending or active consent grant request
+      x-repository: ConsentGrant
+      x-dynamodb:
+        entityType: "CONSENT"
+        pkPatternTemplate: "CONSENT#${grantId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./consents.schemas.yaml#/components/schemas/ConsentGrantCreate
+      responses:
+        "201":
+          description: Grant created
+          content:
+            application/json:
+              schema:
+                $ref: ./consents.schemas.yaml#/components/schemas/ConsentGrantResponse
+        "400":
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/consents/{grantId}:
+    get:
+      operationId: getConsentGrant
+      tags: [Consents]
+      summary: Get consent grant by id
+      x-repository: ConsentGrant
+      x-dynamodb:
+        entityType: "CONSENT"
+        pkPatternTemplate: "CONSENT#${grantId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - name: grantId
+          in: path
+          required: true
+          schema:
+            $ref: ./consents.schemas.yaml#/components/schemas/GrantId
+      responses:
+        "200":
+          description: Grant
+          content:
+            application/json:
+              schema:
+                $ref: ./consents.schemas.yaml#/components/schemas/ConsentGrantResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "404":
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/consents/{grantId}/decide:
+    post:
+      operationId: decideConsentGrant
+      tags: [Consents]
+      summary: Customer grants or denies a pending consent request
+      x-repository: ConsentGrant
+      x-dynamodb:
+        entityType: "CONSENT"
+        pkPatternTemplate: "CONSENT#${grantId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - name: grantId
+          in: path
+          required: true
+          schema:
+            $ref: ./consents.schemas.yaml#/components/schemas/GrantId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./consents.schemas.yaml#/components/schemas/ConsentGrantDecide
+      responses:
+        "200":
+          description: Decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: ./consents.schemas.yaml#/components/schemas/ConsentGrantResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "404":
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        "422":
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/consents/{grantId}/withdraw:
+    post:
+      operationId: withdrawConsentGrant
+      tags: [Consents]
+      summary: Withdraw grant immediately (blocks further evidence access)
+      x-repository: ConsentGrant
+      x-dynamodb:
+        entityType: "CONSENT"
+        pkPatternTemplate: "CONSENT#${grantId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - name: grantId
+          in: path
+          required: true
+          schema:
+            $ref: ./consents.schemas.yaml#/components/schemas/GrantId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      responses:
+        "200":
+          description: Grant withdrawn
+          content:
+            application/json:
+              schema:
+                $ref: ./consents.schemas.yaml#/components/schemas/ConsentGrantResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "404":
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem

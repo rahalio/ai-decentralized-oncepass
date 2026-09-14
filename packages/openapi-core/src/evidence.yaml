@@ -1,0 +1,178 @@
+openapi: 3.1.0
+info:
+  title: Evidence API
+  version: 0.1.0
+  description: |
+    Hash evidence notarisation — no personal data on the shared ledger (BR-2, BR-6).
+  license:
+    name: Proprietary
+    url: https://oncepass.local/license
+  x-domain: evd
+  x-domain-prefix: EV
+  x-product-slug: oncepass
+servers:
+  - url: https://api.oncepass.local
+    description: Local API
+security:
+  - apiKey: []
+tags:
+  - name: Evidence
+    description: Hash evidence records
+  - name: Ssi
+    description: Optional SSI credential mode
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+
+paths:
+  /v1/evidence:
+    get:
+      operationId: listEvidence
+      tags: [Evidence]
+      summary: List evidence hash stubs
+      x-repository: EvidenceRecord
+      x-dynamodb:
+        entityType: "EVIDENCE"
+        pkPatternTemplate: "EVIDENCE#${evidenceId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: vaultId
+          in: query
+          schema:
+            $ref: ./evidence.schemas.yaml#/components/schemas/VaultId
+        - name: subjectRef
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Evidence list
+          content:
+            application/json:
+              schema:
+                $ref: ./evidence.schemas.yaml#/components/schemas/EvidenceListResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+    post:
+      operationId: notariseEvidence
+      tags: [Evidence]
+      summary: Notarise cryptographic evidence (PD-ban must pass)
+      x-repository: EvidenceRecord
+      x-dynamodb:
+        entityType: "EVIDENCE"
+        pkPatternTemplate: "EVIDENCE#${evidenceId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./evidence.schemas.yaml#/components/schemas/EvidenceRecordCreate
+      responses:
+        "201":
+          description: Evidence notarised
+          content:
+            application/json:
+              schema:
+                $ref: ./evidence.schemas.yaml#/components/schemas/EvidenceRecordResponse
+        "400":
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "422":
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/evidence/{evidenceId}:
+    get:
+      operationId: getEvidence
+      tags: [Evidence]
+      summary: Get evidence hash stub by id
+      x-repository: EvidenceRecord
+      x-dynamodb:
+        entityType: "EVIDENCE"
+        pkPatternTemplate: "EVIDENCE#${evidenceId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - name: evidenceId
+          in: path
+          required: true
+          schema:
+            $ref: ./evidence.schemas.yaml#/components/schemas/EvidenceId
+      responses:
+        "200":
+          description: Evidence record
+          content:
+            application/json:
+              schema:
+                $ref: ./evidence.schemas.yaml#/components/schemas/EvidenceRecordResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "404":
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/ssi-template:
+    get:
+      operationId: getSsiTemplate
+      tags: [Ssi]
+      summary: Get optional SSI mode settings
+      x-repository: none
+      responses:
+        "200":
+          description: SSI template
+          content:
+            application/json:
+              schema:
+                $ref: ./evidence.schemas.yaml#/components/schemas/SsiTemplateResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+    put:
+      operationId: updateSsiTemplate
+      tags: [Ssi]
+      summary: Enable/disable SSI presentations under the same PD ban
+      x-repository: none
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./evidence.schemas.yaml#/components/schemas/SsiTemplateUpdate
+      responses:
+        "200":
+          description: SSI template updated
+          content:
+            application/json:
+              schema:
+                $ref: ./evidence.schemas.yaml#/components/schemas/SsiTemplateResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "422":
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem

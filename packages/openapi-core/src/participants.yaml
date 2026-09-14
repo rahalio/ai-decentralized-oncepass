@@ -1,0 +1,342 @@
+openapi: 3.1.0
+info:
+  title: Participants API
+  version: 0.1.0
+  description: |
+    Network orgs, controllership, anomaly suspension, audit exports, reuse metrics (BR-8, BR-10–12).
+  license:
+    name: Proprietary
+    url: https://oncepass.local/license
+  x-domain: prt
+  x-domain-prefix: PR
+  x-product-slug: oncepass
+servers:
+  - url: https://api.oncepass.local
+    description: Local API
+security:
+  - apiKey: []
+tags:
+  - name: Participants
+    description: Network participant orgs
+  - name: Anomalies
+    description: Anomaly alerts and suspension
+  - name: Audit
+    description: Consent and access artefact exports
+  - name: Metrics
+    description: Grant-to-onboarding reuse funnel
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+
+paths:
+  /v1/participants:
+    get:
+      operationId: listParticipants
+      tags: [Participants]
+      summary: List network participants
+      x-repository: ParticipantOrg
+      x-dynamodb:
+        entityType: "PARTICIPANT"
+        pkPatternTemplate: "PARTICIPANT#${participantId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: role
+          in: query
+          schema:
+            $ref: ./participants.schemas.yaml#/components/schemas/ParticipantRole
+        - name: status
+          in: query
+          schema:
+            $ref: ./participants.schemas.yaml#/components/schemas/ParticipantStatus
+      responses:
+        "200":
+          description: Participant list
+          content:
+            application/json:
+              schema:
+                $ref: ./participants.schemas.yaml#/components/schemas/ParticipantListResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+    post:
+      operationId: registerParticipant
+      tags: [Participants]
+      summary: Onboard a network participant with controllership
+      x-repository: ParticipantOrg
+      x-dynamodb:
+        entityType: "PARTICIPANT"
+        pkPatternTemplate: "PARTICIPANT#${participantId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./participants.schemas.yaml#/components/schemas/ParticipantOrgCreate
+      responses:
+        "201":
+          description: Participant registered
+          content:
+            application/json:
+              schema:
+                $ref: ./participants.schemas.yaml#/components/schemas/ParticipantOrgResponse
+        "400":
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/participants/{participantId}:
+    get:
+      operationId: getParticipant
+      tags: [Participants]
+      summary: Get participant by id
+      x-repository: ParticipantOrg
+      x-dynamodb:
+        entityType: "PARTICIPANT"
+        pkPatternTemplate: "PARTICIPANT#${participantId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - name: participantId
+          in: path
+          required: true
+          schema:
+            $ref: ./participants.schemas.yaml#/components/schemas/ParticipantId
+      responses:
+        "200":
+          description: Participant
+          content:
+            application/json:
+              schema:
+                $ref: ./participants.schemas.yaml#/components/schemas/ParticipantOrgResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "404":
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/participants/{participantId}/suspend:
+    post:
+      operationId: suspendParticipant
+      tags: [Participants]
+      summary: Suspend participant network-wide (anomaly / breach containment)
+      x-repository: ParticipantOrg
+      x-dynamodb:
+        entityType: "PARTICIPANT"
+        pkPatternTemplate: "PARTICIPANT#${participantId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - name: participantId
+          in: path
+          required: true
+          schema:
+            $ref: ./participants.schemas.yaml#/components/schemas/ParticipantId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./participants.schemas.yaml#/components/schemas/ParticipantSuspend
+      responses:
+        "200":
+          description: Participant suspended
+          content:
+            application/json:
+              schema:
+                $ref: ./participants.schemas.yaml#/components/schemas/ParticipantOrgResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "404":
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/anomaly-alerts:
+    get:
+      operationId: listAnomalyAlerts
+      tags: [Anomalies]
+      summary: List anomaly alerts
+      x-repository: AnomalyAlert
+      x-dynamodb:
+        entityType: "ANOMALY"
+        pkPatternTemplate: "ANOMALY#${anomalyId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: status
+          in: query
+          schema:
+            $ref: ./participants.schemas.yaml#/components/schemas/AnomalyStatus
+      responses:
+        "200":
+          description: Anomaly queue
+          content:
+            application/json:
+              schema:
+                $ref: ./participants.schemas.yaml#/components/schemas/AnomalyListResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/anomaly-alerts/{anomalyId}/clear:
+    post:
+      operationId: clearAnomalyAlert
+      tags: [Anomalies]
+      summary: Clear false-positive anomaly with reason
+      x-repository: AnomalyAlert
+      x-dynamodb:
+        entityType: "ANOMALY"
+        pkPatternTemplate: "ANOMALY#${anomalyId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - name: anomalyId
+          in: path
+          required: true
+          schema:
+            $ref: ./participants.schemas.yaml#/components/schemas/AnomalyId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./participants.schemas.yaml#/components/schemas/AnomalyClear
+      responses:
+        "200":
+          description: Anomaly cleared
+          content:
+            application/json:
+              schema:
+                $ref: ./participants.schemas.yaml#/components/schemas/AnomalyAlertResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "404":
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/audit-exports:
+    get:
+      operationId: listAuditExports
+      tags: [Audit]
+      summary: List audit export jobs
+      x-repository: AuditExportJob
+      x-dynamodb:
+        entityType: "AUDIT"
+        pkPatternTemplate: "AUDIT#${auditExportId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+      responses:
+        "200":
+          description: Export jobs
+          content:
+            application/json:
+              schema:
+                $ref: ./participants.schemas.yaml#/components/schemas/AuditExportListResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+    post:
+      operationId: requestAuditExport
+      tags: [Audit]
+      summary: Request consent/access artefact export (one-business-day SLA)
+      x-repository: AuditExportJob
+      x-dynamodb:
+        entityType: "AUDIT"
+        pkPatternTemplate: "AUDIT#${auditExportId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./participants.schemas.yaml#/components/schemas/AuditExportCreate
+      responses:
+        "201":
+          description: Export queued
+          content:
+            application/json:
+              schema:
+                $ref: ./participants.schemas.yaml#/components/schemas/AuditExportJobResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/reuse-metrics:
+    get:
+      operationId: getReuseMetrics
+      tags: [Metrics]
+      summary: Grant-to-onboarding funnel (abandoned flows excluded from success)
+      x-repository: none
+      parameters:
+        - name: relyingPartyId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Reuse metrics
+          content:
+            application/json:
+              schema:
+                $ref: ./participants.schemas.yaml#/components/schemas/ReuseMetricsResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem

@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info:
+  title: Vaults schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    VaultId:
+      type: string
+      pattern: '^vlt_[0-9A-HJKMNP-TV-Z]{26}$'
+    HomeVault:
+      type: object
+      required: [id, institutionId, subjectRef, completeness, createdAt, updatedAt]
+      properties:
+        id: { $ref: '#/components/schemas/VaultId' }
+        institutionId: { type: string }
+        subjectRef: { type: string, description: Opaque off-chain subject reference (never PD). }
+        completeness:
+          type: string
+          enum: [incomplete, ready, sync_error]
+        attributeCount: { type: integer, minimum: 0 }
+        integrationStatus: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    HomeVaultCreate:
+      type: object
+      required: [institutionId, subjectRef]
+      properties:
+        institutionId: { type: string }
+        subjectRef: { type: string }
+    HomeVaultListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/HomeVault' }
+        nextCursor: { type: string }
+    HomeVaultResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/HomeVault' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
+    HomeVaultListResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/HomeVaultListData' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }

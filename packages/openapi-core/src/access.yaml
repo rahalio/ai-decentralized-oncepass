@@ -1,0 +1,181 @@
+openapi: 3.1.0
+info:
+  title: Access API
+  version: 0.1.0
+  description: |
+    Relying-party evidence access and local AML decisions (BR-4, BR-9).
+  license:
+    name: Proprietary
+    url: https://oncepass.local/license
+  x-domain: acc
+  x-domain-prefix: AC
+  x-product-slug: oncepass
+servers:
+  - url: https://api.oncepass.local
+    description: Local API
+security:
+  - apiKey: []
+tags:
+  - name: Access
+    description: Evidence access requests
+  - name: Aml
+    description: Local AML judgment
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+
+paths:
+  /v1/access-requests:
+    get:
+      operationId: listAccessRequests
+      tags: [Access]
+      summary: List relying-party access requests
+      x-repository: AccessRequest
+      x-dynamodb:
+        entityType: "ACCESS"
+        pkPatternTemplate: "ACCESS#${accessId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: status
+          in: query
+          schema:
+            $ref: ./access.schemas.yaml#/components/schemas/AccessStatus
+        - name: grantId
+          in: query
+          schema:
+            $ref: ./access.schemas.yaml#/components/schemas/GrantId
+      responses:
+        "200":
+          description: Access queue
+          content:
+            application/json:
+              schema:
+                $ref: ./access.schemas.yaml#/components/schemas/AccessListResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+    post:
+      operationId: requestEvidenceAccess
+      tags: [Access]
+      summary: Request evidence under an active purpose-matching grant
+      x-repository: AccessRequest
+      x-dynamodb:
+        entityType: "ACCESS"
+        pkPatternTemplate: "ACCESS#${accessId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./access.schemas.yaml#/components/schemas/AccessRequestCreate
+      responses:
+        "201":
+          description: Access request created
+          content:
+            application/json:
+              schema:
+                $ref: ./access.schemas.yaml#/components/schemas/AccessRequestResponse
+        "400":
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "422":
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/access-requests/{accessId}:
+    get:
+      operationId: getAccessRequest
+      tags: [Access]
+      summary: Get access request by id
+      x-repository: AccessRequest
+      x-dynamodb:
+        entityType: "ACCESS"
+        pkPatternTemplate: "ACCESS#${accessId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - name: accessId
+          in: path
+          required: true
+          schema:
+            $ref: ./access.schemas.yaml#/components/schemas/AccessId
+      responses:
+        "200":
+          description: Access request
+          content:
+            application/json:
+              schema:
+                $ref: ./access.schemas.yaml#/components/schemas/AccessRequestResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "404":
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/access-requests/{accessId}/aml-decision:
+    post:
+      operationId: recordAmlDecision
+      tags: [Aml]
+      summary: Record local AML judgment after evidence (never network-approved)
+      x-repository: AccessRequest
+      x-dynamodb:
+        entityType: "ACCESS"
+        pkPatternTemplate: "ACCESS#${accessId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+      parameters:
+        - name: accessId
+          in: path
+          required: true
+          schema:
+            $ref: ./access.schemas.yaml#/components/schemas/AccessId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./access.schemas.yaml#/components/schemas/AmlDecisionCreate
+      responses:
+        "200":
+          description: AML decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: ./access.schemas.yaml#/components/schemas/AccessRequestResponse
+        "401":
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        "404":
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        "422":
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem

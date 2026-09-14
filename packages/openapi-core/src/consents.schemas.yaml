@@ -1,0 +1,65 @@
+openapi: 3.1.0
+info:
+  title: Consents schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    GrantId:
+      type: string
+      pattern: '^cns_[0-9A-HJKMNP-TV-Z]{26}$'
+    ConsentStatus:
+      type: string
+      enum: [pending, active, withdrawn, expired, denied]
+    ConsentGrant:
+      type: object
+      required: [id, subjectRef, relyingPartyId, purpose, expiresAt, status, createdAt, updatedAt]
+      properties:
+        id: { $ref: '#/components/schemas/GrantId' }
+        subjectRef: { type: string }
+        relyingPartyId: { type: string }
+        relyingPartyName: { type: string }
+        purpose: { type: string }
+        expiresAt: { type: string, format: date-time }
+        status: { $ref: '#/components/schemas/ConsentStatus' }
+        evidenceScope: { type: string, description: Evidence reference only — not documents. }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        withdrawnAt: { type: string, format: date-time }
+    ConsentGrantCreate:
+      type: object
+      required: [subjectRef, relyingPartyId, purpose, expiresAt]
+      properties:
+        subjectRef: { type: string }
+        relyingPartyId: { type: string }
+        relyingPartyName: { type: string }
+        purpose: { type: string }
+        expiresAt: { type: string, format: date-time }
+        evidenceScope: { type: string }
+    ConsentGrantDecide:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [grant, deny]
+    ConsentGrantListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ConsentGrant' }
+        nextCursor: { type: string }
+    ConsentGrantResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/ConsentGrant' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
+    ConsentGrantListResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/ConsentGrantListData' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }

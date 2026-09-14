@@ -1,0 +1,57 @@
+openapi: 3.1.0
+info:
+  title: Erasures schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    ErasureId:
+      type: string
+      pattern: '^ers_[0-9A-HJKMNP-TV-Z]{26}$'
+    VaultId:
+      type: string
+      pattern: '^vlt_[0-9A-HJKMNP-TV-Z]{26}$'
+    ErasureStatus:
+      type: string
+      enum: [accepted, completed, failed]
+    ErasureEvent:
+      type: object
+      required: [id, vaultId, status, hashesOrphaned, pdNeverOnLedger, createdAt, updatedAt]
+      properties:
+        id: { $ref: '#/components/schemas/ErasureId' }
+        vaultId: { $ref: '#/components/schemas/VaultId' }
+        subjectRef: { type: string }
+        status: { $ref: '#/components/schemas/ErasureStatus' }
+        hashesOrphaned: { type: integer, minimum: 0 }
+        orphanedEvidenceIds:
+          type: array
+          items: { type: string }
+        pdNeverOnLedger: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ErasureEventCreate:
+      type: object
+      required: [vaultId]
+      properties:
+        vaultId: { $ref: '#/components/schemas/VaultId' }
+        subjectRef: { type: string }
+    ErasureListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ErasureEvent' }
+        nextCursor: { type: string }
+    ErasureEventResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/ErasureEvent' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
+    ErasureListResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/ErasureListData' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }

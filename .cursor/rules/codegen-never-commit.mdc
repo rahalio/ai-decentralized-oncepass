@@ -1,0 +1,18 @@
+---
+description: Never commit or push the local .codegen directory
+alwaysApply: true
+---
+
+# `.codegen` must never be committed
+
+- **Do not** `git add`, commit, or push `.codegen/` (or the Python `zero_codegen` tree under it).
+- The directory is gitignored. Restore it by copying from `zero-apps-codegen-scaffold` when missing:
+
+```bash
+rsync -a --exclude node_modules --exclude __pycache__ \
+  /Users/nrahal/@code/zero-apps/zero-apps-codegen-scaffold/.codegen/ \
+  .codegen/
+```
+
+- After restore, run `pnpm codegen:paths` so merged config absolute paths match this repo.
+- Bundled OpenAPI under `packages/openapi-core/src/.bundled/` is also gitignored.

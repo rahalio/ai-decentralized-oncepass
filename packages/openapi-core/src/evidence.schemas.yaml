@@ -1,0 +1,75 @@
+openapi: 3.1.0
+info:
+  title: Evidence schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    EvidenceId:
+      type: string
+      pattern: '^evd_[0-9A-HJKMNP-TV-Z]{26}$'
+    VaultId:
+      type: string
+      pattern: '^vlt_[0-9A-HJKMNP-TV-Z]{26}$'
+    EvidenceRecord:
+      type: object
+      required: [id, vaultId, evidenceHash, pdBanPassed, orphaned, createdAt, updatedAt]
+      properties:
+        id: { $ref: '#/components/schemas/EvidenceId' }
+        vaultId: { $ref: '#/components/schemas/VaultId' }
+        evidenceHash: { type: string, description: Cryptographic hash only — never PD. }
+        pdBanPassed: { type: boolean }
+        auditNote: { type: string }
+        orphaned: { type: boolean }
+        ssiMode: { type: boolean, default: false }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    EvidenceRecordCreate:
+      type: object
+      required: [vaultId, evidenceHash, pdBanPassed]
+      properties:
+        vaultId: { $ref: '#/components/schemas/VaultId' }
+        evidenceHash: { type: string }
+        pdBanPassed: { type: boolean }
+        auditNote: { type: string }
+        ssiMode: { type: boolean, default: false }
+    SsiTemplate:
+      type: object
+      required: [enabled, pdBanEnforced, updatedAt]
+      properties:
+        enabled: { type: boolean }
+        credentialTemplate: { type: string }
+        pdBanEnforced: { type: boolean }
+        updatedAt: { type: string, format: date-time }
+    SsiTemplateUpdate:
+      type: object
+      required: [enabled]
+      properties:
+        enabled: { type: boolean }
+        credentialTemplate: { type: string }
+    EvidenceListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/EvidenceRecord' }
+        nextCursor: { type: string }
+    EvidenceRecordResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/EvidenceRecord' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
+    EvidenceListResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/EvidenceListData' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
+    SsiTemplateResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/SsiTemplate' }
+        meta: { $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta }
